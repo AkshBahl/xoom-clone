@@ -6,6 +6,8 @@ import {
   useCall,
   useCallStateHooks,
 } from '@stream-io/video-react-sdk';
+import { useSearchParams } from 'next/navigation';
+import { UserPlus } from 'lucide-react';
 
 import Alert from './Alert';
 import { Button } from './ui/button';
@@ -22,6 +24,9 @@ const MeetingSetup = ({
   const callTimeNotArrived =
     callStartsAt && new Date(callStartsAt) > new Date();
   const callHasEnded = !!callEndedAt;
+  const searchParams = useSearchParams();
+  const isPersonalRoom = !!searchParams.get('personal');
+  const [waitingParticipantsCount, setWaitingParticipantsCount] = useState(0);
 
   const call = useCall();
 
@@ -30,6 +35,32 @@ const MeetingSetup = ({
       'useStreamCall must be used within a StreamCall component.',
     );
   }
+
+  // Check for waiting participants if this is a personal room
+  useEffect(() => {
+    if (!call || !isPersonalRoom) return;
+    
+    const checkWaitingParticipants = async () => {
+      try {
+        // In a real implementation, query for participants with waiting status
+        const participants = await call.queryMembers({
+          filter_conditions: {
+            custom: { status: 'waiting' }
+          },
+        });
+        
+        setWaitingParticipantsCount(participants.members.length);
+      } catch (error) {
+        console.error('Error checking waiting participants:', error);
+      }
+    };
+    
+    // Check immediately and then every 5 seconds
+    checkWaitingParticipants();
+    const intervalId = setInterval(checkWaitingParticipants, 5000);
+    
+    return () => clearInterval(intervalId);
+  }, [call, isPersonalRoom]);
 
   // https://getstream.io/video/docs/react/ui-cookbook/replacing-call-controls/
   const [isMicCamToggled, setIsMicCamToggled] = useState(false);
@@ -62,6 +93,16 @@ const MeetingSetup = ({
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center gap-3 text-white">
       <h1 className="text-center text-2xl font-bold">Setup</h1>
+      
+      {isPersonalRoom && waitingParticipantsCount > 0 && (
+        <div className="mb-4 p-3 bg-yellow-500/30 rounded-lg flex items-center">
+          <UserPlus size={20} className="mr-2" />
+          <span>
+            {waitingParticipantsCount} {waitingParticipantsCount === 1 ? 'participant is' : 'participants are'} waiting to join
+          </span>
+        </div>
+      )}
+      
       <VideoPreview />
       <div className="flex h-16 items-center justify-center gap-3">
         <label className="flex items-center justify-center gap-2 font-medium">

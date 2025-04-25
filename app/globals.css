@@ -42,6 +42,30 @@
   height: 40px;
 }
 
+/* Video flickering prevention styles */
+.str-video__participant-view video {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
+  filter: brightness(1);
+}
+
+.str-video__participant-view, 
+.str-video__participant-view * {
+  transition: none !important;
+}
+
+.str-video__participant-view__container, 
+.str-video__speaker-layout__main-container,
+.str-video__speaker-layout__participants {
+  transition: none !important;
+}
+
+.str-video__call-container {
+  contain: layout paint;
+}
+
 .glassmorphism {
   background: rgba(255, 255, 255, 0.15); /* Reduced opacity for more contrast */
   backdrop-filter: blur(4px);
